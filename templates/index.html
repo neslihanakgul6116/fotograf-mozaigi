@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Net Foto Mozaik Tablo Oluşturucu</title>
+    <style>
+        :root {
+            --bg-color: #1e1e2e; --container-bg: #181825; --text-color: #cdd6f4;
+            --accent-color: #89b4fa; --card-bg: #313244; --border-color: #45475a;
+        }
+        .light-mode {
+            --bg-color: #e6e9ef; --container-bg: #ffffff; --text-color: #4c4f69;
+            --accent-color: #1e66f5; --card-bg: #e6e9ef; --border-color: #bcc0cc;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 30px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; }
+        .container { background: var(--container-bg); padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); width: 100%; max-width: 740px; position: relative; }
+        
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h2 { color: var(--accent-color); margin: 0; }
+        .theme-toggle { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: var(--accent-color); }
+        input[type="file"], select { width: 100%; padding: 10px; box-sizing: border-box; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; }
+        .checkbox-group { display: flex; gap: 15px; margin-top: 8px; }
+        .checkbox-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
+        .info { font-size: 12px; color: #f9e2af; margin-top: 4px; }
+        
+        button, .btn-action { background: #a6e3a1; color: #11111b; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; width: 100%; transition: 0.2s; text-decoration: none; display: inline-block; box-sizing: border-box; text-align: center; }
+        button:hover, .btn-action:hover { background: #94e2d5; }
+        
+        .btn-webcam { background: #f38ba8; color: #11111b; margin-top: 10px; }
+        .btn-webcam:hover { background: #f5c2e7; }
+
+        /* İstatistik Kartları */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; text-align: center; }
+        .stat-card .val { font-size: 16px; font-weight: bold; color: var(--accent-color); }
+        .stat-card .lbl { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+
+        /* Top 5 Kartları */
+        .top5-container { margin-top: 15px; background: var(--card-bg); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .top5-title { font-size: 13px; font-weight: bold; color: var(--accent-color); margin-bottom: 8px; }
+        .top5-grid { display: flex; gap: 10px; overflow-x: auto; }
+        .top5-item { display: flex; align-items: center; gap: 8px; background: var(--container-bg); padding: 6px 10px; border-radius: 6px; font-size: 12px; }
+        .top5-item img { width: 32px; height: 32px; border-radius: 4px; object-fit: cover; }
+
+        /* Split Slider */
+        .comparison-slider {
+            position: relative; width: 100%; height: 420px; overflow: hidden; border-radius: 8px;
+            border: 2px solid var(--accent-color); margin-top: 15px; cursor: zoom-in;
+        }
+        .comparison-slider img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .img-overlay { position: absolute; top: 0; left: 0; width: 50%; height: 100%; overflow: hidden; }
+        .slider-handle {
+            position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: #a6e3a1;
+            cursor: ew-resize; z-index: 10; transform: translateX(-50%);
+        }
+        .slider-handle::after {
+            content: "↔"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 28px; height: 28px; background: #a6e3a1; color: #11111b; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-weight: bold;
+        }
+
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+
+        /* Galeri */
+        .galeri-container { margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; }
+        .galeri-grid { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+        .galeri-grid img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-color); flex-shrink: 0; }
+
+        /* Webcam Alanı */
+        #webcamContainer { display: none; text-align: center; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px; }
+        #webcamStream { width: 100%; max-width: 640px; border-radius: 8px; border: 3px solid var(--accent-color); }
+
+        /* Zoom Modal */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.92); overflow: hidden; justify-content: center; align-items: center;
+        }
+        .modal-icerik { position: relative; cursor: grab; max-width: 95%; max-height: 95%; display: flex; justify-content: center; align-items: center; }
+        .modal-icerik img { max-width: 100%; max-height: 95vh; border-radius: 6px; border: 3px solid var(--accent-color); }
+        .kapat-btn { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 35px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-top">
+            <h2>✨ Yüksek Netlikte Foto Mozaik</h2>
+            <button class="theme-toggle" onclick="temaDegistir()">🌓 Mod Değiştir</button>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>1. Hedef Resim (İsteğe Bağlı):</label>
+                <input type="file" name="hedef_resim" accept="image/*">
+                <div class="info">💡 Dosya seçmezseniz, klasördeki <b>logo.png</b> otomatik işlenir.</div>
+            </div>
+            
+            <div class="form-group">
+                <label>2. Minik Fotoğraf Boyutu & Parça Şekli:</label>
+                <div style="display: flex; gap: 10px;">
+                    <select name="blok_boyutu" style="flex: 2;">
+                        <option value="32">32 x 32 (Yoğun Detaylı)</option>
+                        <option value="48">48 x 48 (Orta Boyut)</option>
+                        <option value="64" selected>64 x 64 (İri Kareler - Önerilen)</option>
+                        <option value="80">80 x 80 (Ekstra Büyük Kareler)</option>
+                    </select>
+                    <select name="parca_sekli" style="flex: 1;">
+                        <option value="kare" selected>🔲 Kare</option>
+                        <option value="daire">🟡 Daire</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>3. Renk Algoritması & Netlik Oranı:</label>
+                <div style="display: flex; gap: 10px;">
+                    <select name="renk_uzayi" style="flex: 1;">
+                        <option value="LAB" selected>CIELAB L*a*b* (Doğal Renkler)</option>
+                        <option value="BGR">BGR / RGB (Standart Hızlı)</option>
+                    </select>
+                    <select name="harmanlama_orani" style="flex: 1;">
+                        <option value="0.30">%30 Netlik</option>
+                        <option value="0.45" selected>%45 Netlik (Önerilen)</option>
+                        <option value="0.60">%60 Netlik</option>
+                    </select>
+                </div>
+                <div class="checkbox-group">
+                    <label class="checkbox-label"><input type="checkbox" name="renk_tonlama" checked> 🎨 Akıllı Renk Adaptasyonu</label>
+                    <label class="checkbox-label"><input type="checkbox" name="izgara_ekle"> 📐 Çerçeve/Izgara Çizgisi</label>
+                </div>
+            </div>
+
+            <button type="submit">🚀 Profesyonel Mozaik Oluştur</button>
+        </form>
+
+        <button type="button" class="btn-action btn-webcam" onclick="webcamToggle()">📹 Canlı Kamera (Webcam) Mozaik Modunu Aç/Kapat</button>
+
+        <!-- Canlı Kamera Alanı -->
+        <div id="webcamContainer">
+            <h3>📹 Canlı Anlık Mozaik Video Akışı:</h3>
+            <img id="webcamStream" src="" alt="Kamera Akışı Bekleniyor...">
+        </div>
+
+        {% if stats %}
+        <div class="stats-grid">
+            <div class="stat-card"><div class="val">{{ stats.sure }} s</div><div class="lbl">Süre</div></div>
+            <div class="stat-card"><div class="val">{{ stats.toplam_kare }}</div><div class="lbl">Parça Sayısı</div></div>
+            <div class="stat-card"><div class="val">{{ stats.duzen }}</div><div class="lbl">Düzen</div></div>
+            <div class="stat-card"><div class="val">{{ stats.sekil }}</div><div class="lbl">Parça Biçimi</div></div>
+        </div>
+        {% endif %}
+
+        {% if top_5 %}
+        <div class="top5-container">
+            <div class="top5-title">📈 En Çok Kullanılan Minik Fotoğraflar (Top 5):</div>
+            <div class="top5-grid">
+                {% for resim, sayi in top_5 %}
+                <div class="top5-item">
+                    <img src="{{ url_for('kaynak_resim_getir', filename=resim) }}">
+                    <span><b>{{ sayi }}x</b></span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if mozaik_resim %}
+        <div style="margin-top: 20px; text-align: center;">
+            <h3>🎨 Orijinal vs Mozaik Canlı Slider:</h3>
+            <div class="comparison-slider" id="sliderContainer" onclick="zoomAc('{{ url_for('static', filename=mozaik_resim) }}')">
+                <img src="{{ url_for('static', filename=mozaik_resim) }}" alt="Mozaik">
+                <div class="img-overlay" id="imgOverlay">
+                    <img src="{{ url_for('static', filename=hedef_resim) }}" alt="Orijinal" id="orijinalImg">
+                </div>
+                <div class="slider-handle" id="sliderHandle"></div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="{{ url_for('download_file', filename=mozaik_resim) }}" class="btn-action">📥 HD Mozaiği İndir</a>
+                <button type="button" onclick="window.print()" class="btn-action" style="background: #89b4fa; color: #11111b;">📄 Raporu Yazdır / PDF</button>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if galeri %}
+        <div class="galeri-container">
+            <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">📁 Kaynak Kütüphanesi ({{ galeri|length }} Görsel):</div>
+            <div class="galeri-grid">
+                {% for img_name in galeri %}
+                <img src="{{ url_for('kaynak_resim_getir', filename=img_name) }}">
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Zoom Modal -->
+    <div id="zoomModal" class="modal">
+        <span class="kapat-btn" onclick="zoomKapat()">&times;</span>
+        <div class="modal-icerik" id="modalContainer"><img id="modalImg" src=""></div>
+    </div>
+
+    <script>
+        function temaDegistir() { document.body.classList.toggle('light-mode'); }
+
+        function webcamToggle() {
+            const container = document.getElementById('webcamContainer');
+            const stream = document.getElementById('webcamStream');
+            if (container.style.display === 'none' || container.style.display === '') {
+                container.style.display = 'block';
+                stream.src = "{{ url_for('video_feed') }}";
+            } else {
+                container.style.display = 'none';
+                stream.src = "";
+            }
+        }
+
+        const sliderContainer = document.getElementById('sliderContainer');
+        const imgOverlay = document.getElementById('imgOverlay');
+        const sliderHandle = document.getElementById('sliderHandle');
+        const orijinalImg = document.getElementById('orijinalImg');
+
+        if (sliderContainer) {
+            let isDragging = false;
+            function updateWidth() { if (orijinalImg && sliderContainer) orijinalImg.style.width = sliderContainer.offsetWidth + 'px'; }
+            window.addEventListener('resize', updateWidth); updateWidth();
+
+            function move(x) {
+                const rect = sliderContainer.getBoundingClientRect();
+                let pos = x - rect.left;
+                if (pos < 0) pos = 0; if (pos > rect.width) pos = rect.width;
+                const perc = (pos / rect.width) * 100;
+                imgOverlay.style.width = perc + '%';
+                sliderHandle.style.left = perc + '%';
+            }
+            sliderHandle.addEventListener('mousedown', (e) => { e.stopPropagation(); isDragging = true; });
+            window.addEventListener('mouseup', () => isDragging = false);
+            window.addEventListener('mousemove', (e) => { if (isDragging) move(e.clientX); });
+        }
+
+        let olcek = 1;
+        const modal = document.getElementById("zoomModal");
+        const container = document.getElementById("modalContainer");
+        const img = document.getElementById("modalImg");
+
+        function zoomAc(src) { img.src = src; olcek = 1; container.style.transform = `scale(${olcek})`; modal.style.display = "flex"; }
+        function zoomKapat() { modal.style.display = "none"; }
+
+        modal.addEventListener("wheel", (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0) olcek *= 1.2; else { olcek /= 1.2; if (olcek < 1) olcek = 1; }
+            container.style.transform = `scale(${olcek})`;
+        });
+
+        let surukleniyor = false, basX, basY, trX = 0, trY = 0;
+        container.addEventListener('mousedown', (e) => { surukleniyor = true; basX = e.clientX - trX; basY = e.clientY - trY; });
+        window.addEventListener('mousemove', (e) => {
+            if (!surukleniyor) return;
+            trX = e.clientX - basX; trY = e.clientY - basY;
+            container.style.transform = `scale(${olcek}) translate(${trX / olcek}px, ${trY / olcek}px)`;
+        });
+        window.addEventListener('mouseup', () => surukleniyor = false);
+    </script>
+</body>
+</html>
